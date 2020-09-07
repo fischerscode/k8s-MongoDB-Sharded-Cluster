@@ -1,5 +1,8 @@
 ### Setup mongodb config server
-`kubectl run mongo --rm -it --image mongo -- mongo mongodb://mongodb-configserver-0.mongodb-configserver:27017`
+1. `kubectl apply -f config-server.yaml`
+2. Wait until all pods are ready: `watch "kubectl get pods | grep mongodb-configserver"`
+3. `kubectl run mongo --rm -it --image mongo -- mongo mongodb://mongodb-configserver-0.mongodb-configserver:27017`
+4. initiate
 ```
 rs.initiate(
   {
@@ -12,6 +15,7 @@ rs.initiate(
     ]
   }
 )
-
-rs.status()
 ```
+5. Check config: `rs.status()`
+6. close: `quit()`
+
