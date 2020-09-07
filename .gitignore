@@ -1,1 +1,4 @@
 .idea
+ca.crt
+ca.key
+openssl.cnf
