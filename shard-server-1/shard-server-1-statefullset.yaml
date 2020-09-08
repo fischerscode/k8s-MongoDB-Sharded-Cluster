@@ -1,0 +1,83 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb-shard-1-server
+spec:
+  selector:
+    matchLabels:
+      app: mongodb-ss-1
+  serviceName: mongodb-ss-1
+  replicas: 3
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: mongodb-ss-1
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: mongo
+          image: mongo:4.2.9
+          command:
+            - "/bin/sh"
+            - "-c"
+            - |
+              cat /certs/tls.crt /certs/tls.key > /cluster-auth.pem
+              mongod \
+                --shardsvr \
+                --replSet=shard1rs \
+                --auth \
+                --port=27017 \
+                --dbpath=/data/db \
+                --bind_ip_all \
+                --tlsOnNormalPorts \
+                --tlsCAFile=/certs/ca.crt \
+                --tlsCertificateKeyFile=/cluster-auth.pem \
+                --tlsClusterFile=/cluster-auth.pem \
+                --tlsClusterCAFile=/certs/ca.crt \
+                --clusterAuthMode=x509
+          livenessProbe:
+            tcpSocket:
+              port: 27017
+            initialDelaySeconds: 30
+            timeoutSeconds: 1
+            failureThreshold: 3
+            periodSeconds: 10
+            successThreshold: 1
+          readinessProbe:
+            tcpSocket:
+              port: 27017
+            initialDelaySeconds: 5
+            timeoutSeconds: 1
+            failureThreshold: 30
+            periodSeconds: 10
+            successThreshold: 1
+          ports:
+            - containerPort: 27017
+              name: configsvr
+          volumeMounts:
+            - name: data
+              mountPath: /data/db
+            - name: cert-cluster-auth
+              mountPath: /certs
+      volumes:
+        - name: cert-cluster-auth
+          secret:
+            secretName: certificate-mongodb-ss-1-cluster-auth
+      affinity:
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                topologyKey: "kubernetes.io/hostname"
+              weight: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+#       storageClassName: "storageclass"
+        resources:
+          requests:
+            storage: 10Gi
