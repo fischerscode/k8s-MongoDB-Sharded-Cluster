@@ -15,22 +15,6 @@ spec:
 
 ---
 
-#apiVersion: cert-manager.io/v1
-#kind: Certificate
-#metadata:
-#  name: certificate-mongodb-config-server-tls
-#spec:
-#  secretName: certificate-mongodb-config-server-tls
-#  issuerRef:
-#    name: mongodb-cluster-ca-issuer
-#    kind: Issuer
-#  commonName: "mongodb-configserver.mongodb-configserver"
-#  dnsNames:
-#    - "mongodb-configserver.mongodb-configserver.default.svc.cluster.local"
-#    - "*.mongodb-configserver.default.svc.cluster.local"
-
----
-
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -50,10 +34,6 @@ spec:
     - "mongodb-configserver.mongodb-configserver.default.svc.cluster.local"
     - "*.mongodb-configserver.default.svc.cluster.local"
     - "mongodb-configserver.mongodb-configserver"
-#    - "*.mongodb-configserver.default.svc.cluster.local."
-#    - "mongodb-configserver-0"
-#    - "mongodb-configserver-1"
-#    - "mongodb-configserver-2"
   usages:
     - client auth
     - server auth
@@ -106,23 +86,6 @@ spec:
           command:
             - "/bin/sh"
             - "-c"
-#            - |
-#              cat /certs-tls/tls.crt /certs-tls/tls.key > /tls.pem
-#              cat /certs-cluster-auth/tls.crt /certs-cluster-auth/tls.key > /cluster-auth.pem
-#              mongod \
-#                --configsvr \
-#                --replSet=cfgrs \
-#                --port=27017 \
-#                --dbpath=/data/db \
-#                --bind_ip_all \
-#                --tlsOnNormalPorts \
-#                --tlsCAFile=/certs-tls/ca.crt \
-#                --tlsCertificateKeyFile=/tls.pem \
-#                --tlsAllowConnectionsWithoutCertificates
-#            #        --tlsClusterFile=/cluster-auth.pem \
-#            #        --tlsClusterCAFile=/certs-cluster-auth/ca.crt \
-#            #        --clusterAuthMode=x509
-
             - |
               cat /certs-cluster-auth/tls.crt /certs-cluster-auth/tls.key > /cluster-auth.pem
               mongod \
@@ -138,14 +101,6 @@ spec:
                 --tlsClusterFile=/cluster-auth.pem \
                 --tlsClusterCAFile=/certs-cluster-auth/ca.crt \
                 --clusterAuthMode=x509
-
-
-          #    #\
-          #    #  --tlsAllowInvalidHostnames
-
-           #   #\
-           #   #  --tlsAllowConnectionsWithoutCertificates
-
           livenessProbe:
             tcpSocket:
               port: 27017

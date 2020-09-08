@@ -1,3 +1,5 @@
+# Work in progress!
+
 ### Setup ca (for ssl)
 1. make sure cert-manager is installed
 2. `openssl genrsa -out ca.key 8192`
