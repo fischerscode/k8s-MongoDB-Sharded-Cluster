@@ -91,7 +91,6 @@ spec:
               mongod \
                 --configsvr \
                 --replSet=cfgrs \
-                --auth \
                 --port=27017 \
                 --dbpath=/data/db \
                 --bind_ip_all \
