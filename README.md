@@ -36,7 +36,7 @@ db.getSiblingDB("$external").runCommand({
 })
 ```
 8. close: `quit()`
-9. add `--auth \` in config-server below `--replSet=cfgrs \`
+9. replace `noauth` with `auth` in config-server
 10. `kubectl apply -f config-server.yaml`
 (connect using: `kubectl exec -it mongodb-configserver-0 -- /bin/bash -c "cat /certs-root/tls.crt /certs-root/tls.key > /root.key && mongo --tls --tlsCAFile /certs-cluster-auth/ca.crt --tlsAllowInvalidHostnames --tlsCertificateKeyFile /root.key"`
 login using: `db.getSiblingDB("$external").auth({mechanism: "MONGODB-X509", user: "CN=root,OU=administration,O=organizationName"})`)
