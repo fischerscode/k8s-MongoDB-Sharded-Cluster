@@ -1,0 +1,24 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: certificate-mongodb-cs-cluster-auth
+spec:
+  secretName: certificate-mongodb-cs-cluster-auth
+  issuerRef:
+    name: mongodb-cluster-ca-issuer
+    kind: Issuer
+  subject:
+    organizations:
+      - organizationName
+    organizationalUnits:
+      - organizationUnit
+  commonName: "mongodb-cs.mongodb-cs.default.svc.cluster.local"
+  dnsNames:
+    - "mongodb-cs.mongodb-cs.default.svc.cluster.local"
+    - "*.mongodb-cs.default.svc.cluster.local"
+    - "mongodb-cs.mongodb-cs"
+    - "*.mongodb-cs"
+  usages:
+    - client auth
+    - server auth

@@ -1,0 +1,20 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: certificate-mongodb-cs-root
+spec:
+  secretName: certificate-mongodb-cs-root
+  issuerRef:
+    name: mongodb-cluster-ca-issuer
+    kind: Issuer
+  subject:
+    organizations:
+      - organizationName
+    organizationalUnits:
+      - administration
+  commonName: "root"
+  dnsNames:
+    - "root"
+  usages:
+    - client auth

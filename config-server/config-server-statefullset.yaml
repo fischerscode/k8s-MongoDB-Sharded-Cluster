@@ -1,68 +1,4 @@
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: mongodb-cs
-  labels:
-    app: mongodb-cs
-spec:
-  ports:
-    - name: mongo
-      port: 27017
-  clusterIP: None
-  selector:
-    app: mongodb-cs
-
----
-
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: certificate-mongodb-cs-cluster-auth
-spec:
-  secretName: certificate-mongodb-cs-cluster-auth
-  issuerRef:
-    name: mongodb-cluster-ca-issuer
-    kind: Issuer
-  subject:
-    organizations:
-      - organizationName
-    organizationalUnits:
-      - organizationUnit
-  commonName: "mongodb-cs.mongodb-cs.default.svc.cluster.local"
-  dnsNames:
-    - "mongodb-cs.mongodb-cs.default.svc.cluster.local"
-    - "*.mongodb-cs.default.svc.cluster.local"
-    - "mongodb-cs.mongodb-cs"
-    - "*.mongodb-cs"
-  usages:
-    - client auth
-    - server auth
-
----
-
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: certificate-mongodb-cs-root
-spec:
-  secretName: certificate-mongodb-cs-root
-  issuerRef:
-    name: mongodb-cluster-ca-issuer
-    kind: Issuer
-  subject:
-    organizations:
-      - organizationName
-    organizationalUnits:
-      - administration
-  commonName: "root"
-  dnsNames:
-    - "root"
-  usages:
-    - client auth
-
----
-
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -88,7 +24,7 @@ spec:
             - "/bin/sh"
             - "-c"
             - |
-              cat /certs-cluster-auth/tls.crt /certs-cluster-auth/tls.key > /cluster-auth.pem
+              cat /certs/tls.crt /certs/tls.key > /cluster-auth.pem
               mongod \
                 --configsvr \
                 --replSet=cfgrs \
@@ -97,10 +33,10 @@ spec:
                 --dbpath=/data/db \
                 --bind_ip_all \
                 --tlsOnNormalPorts \
-                --tlsCAFile=/certs-cluster-auth/ca.crt \
+                --tlsCAFile=/certs/ca.crt \
                 --tlsCertificateKeyFile=/cluster-auth.pem \
                 --tlsClusterFile=/cluster-auth.pem \
-                --tlsClusterCAFile=/certs-cluster-auth/ca.crt \
+                --tlsClusterCAFile=/certs/ca.crt \
                 --clusterAuthMode=x509
           livenessProbe:
             tcpSocket:
@@ -124,17 +60,12 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data/db
-            - name: certs-cluster-auth
-              mountPath: /certs-cluster-auth
-            - name: certs-root
-              mountPath: /certs-root
+            - name: cert-cluster-auth
+              mountPath: /certs
       volumes:
-        - name: certs-cluster-auth
+        - name: cert-cluster-auth
           secret:
             secretName: certificate-mongodb-cs-cluster-auth
-        - name: certs-root
-          secret:
-            secretName: certificate-mongodb-cs-root
       affinity:
         podAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -146,9 +77,7 @@ spec:
         name: data
       spec:
         accessModes: [ "ReadWriteOnce" ]
-#        storageClassName: "storageclass"
+        #        storageClassName: "storageclass"
         resources:
           requests:
             storage: 2Gi
-
----
