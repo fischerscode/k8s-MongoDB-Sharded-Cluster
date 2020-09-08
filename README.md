@@ -20,9 +20,9 @@ rs.initiate(
     _id: "cfgrs",
     configsvr: true,
     members: [
-      { _id : 0, host : "mongodb-configserver-0.mongodb-configserver.default.svc.cluster.local:27017" },
-      { _id : 1, host : "mongodb-configserver-1.mongodb-configserver.default.svc.cluster.local:27017" },
-      { _id : 2, host : "mongodb-configserver-2.mongodb-configserver.default.svc.cluster.local:27017" }
+      { _id : 0, host : "mongodb-configserver-0.mongodb-cs.default.svc.cluster.local:27017" },
+      { _id : 1, host : "mongodb-configserver-1.mongodb-cs.default.svc.cluster.local:27017" },
+      { _id : 2, host : "mongodb-configserver-2.mongodb-cs.default.svc.cluster.local:27017" }
     ]
   }
 )
@@ -36,9 +36,6 @@ db.getSiblingDB("$external").runCommand({
 })
 ```
 8. close: `quit()`
-9. replace `noauth` with `auth` in config-server
-10. `kubectl apply -f config-server.yaml`
-(connect using: `kubectl exec -it mongodb-configserver-0 -- /bin/bash -c "cat /certs-root/tls.crt /certs-root/tls.key > /root.key && mongo --tls --tlsCAFile /certs-cluster-auth/ca.crt --tlsAllowInvalidHostnames --tlsCertificateKeyFile /root.key"`
-login using: `db.getSiblingDB("$external").auth({mechanism: "MONGODB-X509", user: "CN=root,OU=administration,O=organizationName"})`)
+(connect as root using: `bash config-server-login.sh`)
 
 

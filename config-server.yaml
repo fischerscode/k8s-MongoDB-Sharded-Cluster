@@ -2,25 +2,25 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: mongodb-configserver
+  name: mongodb-cs
   labels:
-    app: mongodb-configserver
+    app: mongodb-cs
 spec:
   ports:
     - name: mongo
       port: 27017
   clusterIP: None
   selector:
-    app: mongodb-configserver
+    app: mongodb-cs
 
 ---
 
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: certificate-mongodb-config-server-cluster-auth
+  name: certificate-mongodb-cs-cluster-auth
 spec:
-  secretName: certificate-mongodb-config-server-cluster-auth
+  secretName: certificate-mongodb-cs-cluster-auth
   issuerRef:
     name: mongodb-cluster-ca-issuer
     kind: Issuer
@@ -28,12 +28,13 @@ spec:
     organizations:
       - organizationName
     organizationalUnits:
-      - mongodb-configserver
-  commonName: "mongodb-configserver.mongodb-configserver"
+      - organizationUnit
+  commonName: "mongodb-cs.mongodb-cs.default.svc.cluster.local"
   dnsNames:
-    - "mongodb-configserver.mongodb-configserver.default.svc.cluster.local"
-    - "*.mongodb-configserver.default.svc.cluster.local"
-    - "mongodb-configserver.mongodb-configserver"
+    - "mongodb-cs.mongodb-cs.default.svc.cluster.local"
+    - "*.mongodb-cs.default.svc.cluster.local"
+    - "mongodb-cs.mongodb-cs"
+    - "*.mongodb-cs"
   usages:
     - client auth
     - server auth
@@ -43,9 +44,9 @@ spec:
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: certificate-mongodb-config-server-root
+  name: certificate-mongodb-cs-root
 spec:
-  secretName: certificate-mongodb-config-server-root
+  secretName: certificate-mongodb-cs-root
   issuerRef:
     name: mongodb-cluster-ca-issuer
     kind: Issuer
@@ -69,15 +70,15 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app: mongodb-configserver
-  serviceName: mongodb-configserver
+      app: mongodb-cs
+  serviceName: mongodb-cs
   replicas: 3
   updateStrategy:
     type: RollingUpdate
   template:
     metadata:
       labels:
-        app: mongodb-configserver
+        app: mongodb-cs
     spec:
       terminationGracePeriodSeconds: 10
       containers:
@@ -91,7 +92,7 @@ spec:
               mongod \
                 --configsvr \
                 --replSet=cfgrs \
-                --noauth \
+                --auth \
                 --port=27017 \
                 --dbpath=/data/db \
                 --bind_ip_all \
@@ -121,7 +122,7 @@ spec:
             - containerPort: 27017
               name: configsvr
           volumeMounts:
-            - name: mongo
+            - name: data
               mountPath: /data/db
             - name: certs-cluster-auth
               mountPath: /certs-cluster-auth
@@ -130,10 +131,10 @@ spec:
       volumes:
         - name: certs-cluster-auth
           secret:
-            secretName: certificate-mongodb-config-server-cluster-auth
+            secretName: certificate-mongodb-cs-cluster-auth
         - name: certs-root
           secret:
-            secretName: certificate-mongodb-config-server-root
+            secretName: certificate-mongodb-cs-root
       affinity:
         podAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -142,7 +143,7 @@ spec:
               weight: 5
   volumeClaimTemplates:
     - metadata:
-        name: mongo
+        name: data
       spec:
         accessModes: [ "ReadWriteOnce" ]
 #        storageClassName: "storageclass"
