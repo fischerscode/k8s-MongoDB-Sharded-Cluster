@@ -10,7 +10,7 @@
 1. change credentials in config-server.yaml (also organizationName)
 2. `kubectl apply -f config-server.yaml`
 3. Wait until all pods are ready: `watch "kubectl get pods | grep mongodb-configserver"`
-4. `kubectl exec -it mongodb-configserver-0 -- mongo --tls --tlsCAFile /certs-tls/ca.crt --tlsCertificateKeyFile=/cluster-auth.pem --tlsAllowInvalidHostnames`
+4. `kubectl exec -it mongodb-configserver-0 -- mongo --tls --tlsCAFile /certs-cluster-auth/ca.crt --tlsCertificateKeyFile=/cluster-auth.pem --tlsAllowInvalidHostnames`
 5. initiate
 ```
 rs.initiate(
@@ -34,9 +34,9 @@ db.getSiblingDB("$external").runCommand({
 })
 ```
 8. close: `quit()`
-9. remove `--tlsAllowConnectionsWithoutCertificates` from config-server and uncomment the other lines
+9. add `--auth \` in config-server below `--replSet=cfgrs \`
 10. `kubectl apply -f config-server.yaml`
-(connect using: `kubectl exec -it mongodb-configserver-2 -- /bin/bash -c "cat /certs-root/tls.crt /certs-root/tls.key > /root.key && mongo --tls --tlsCAFile /certs-tls/ca.crt --tlsAllowInvalidHostnames --tlsCertificateKeyFile /root.key"`
+(connect using: `kubectl exec -it mongodb-configserver-0 -- /bin/bash -c "cat /certs-root/tls.crt /certs-root/tls.key > /root.key && mongo --tls --tlsCAFile /certs-cluster-auth/ca.crt --tlsAllowInvalidHostnames --tlsCertificateKeyFile /root.key"`
 login using: `db.getSiblingDB("$external").auth({mechanism: "MONGODB-X509", user: "CN=root,OU=administration,O=organizationName"})`)
 
 

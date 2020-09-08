@@ -15,19 +15,19 @@ spec:
 
 ---
 
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: certificate-mongodb-config-server-tls
-spec:
-  secretName: certificate-mongodb-config-server-tls
-  issuerRef:
-    name: mongodb-cluster-ca-issuer
-    kind: Issuer
-  commonName: "mongodb-configserver.mongodb-configserver"
-  dnsNames:
-    - "mongodb-configserver.mongodb-configserver"
-    - "*.mongodb-configserver"
+#apiVersion: cert-manager.io/v1
+#kind: Certificate
+#metadata:
+#  name: certificate-mongodb-config-server-tls
+#spec:
+#  secretName: certificate-mongodb-config-server-tls
+#  issuerRef:
+#    name: mongodb-cluster-ca-issuer
+#    kind: Issuer
+#  commonName: "mongodb-configserver.mongodb-configserver"
+#  dnsNames:
+#    - "mongodb-configserver.mongodb-configserver.default.svc.cluster.local"
+#    - "*.mongodb-configserver.default.svc.cluster.local"
 
 ---
 
@@ -43,12 +43,20 @@ spec:
   subject:
     organizations:
       - organizationName
+    organizationalUnits:
+      - mongodb-configserver
   commonName: "mongodb-configserver.mongodb-configserver"
   dnsNames:
+    - "mongodb-configserver.mongodb-configserver.default.svc.cluster.local"
+    - "*.mongodb-configserver.default.svc.cluster.local"
     - "mongodb-configserver.mongodb-configserver"
-    - "*.mongodb-configserver"
+#    - "*.mongodb-configserver.default.svc.cluster.local."
+#    - "mongodb-configserver-0"
+#    - "mongodb-configserver-1"
+#    - "mongodb-configserver-2"
   usages:
     - client auth
+    - server auth
 
 ---
 
@@ -91,7 +99,7 @@ spec:
       labels:
         app: mongodb-configserver
     spec:
-      terminationGracePeriodSeconds: 5
+      terminationGracePeriodSeconds: 10
       containers:
         - name: mongo
           image: mongo:4.2.9
@@ -116,51 +124,43 @@ spec:
 #            #        --clusterAuthMode=x509
 
             - |
-              cat /certs-tls/tls.crt /certs-tls/tls.key > /tls.pem
               cat /certs-cluster-auth/tls.crt /certs-cluster-auth/tls.key > /cluster-auth.pem
               mongod \
                 --configsvr \
                 --replSet=cfgrs \
+                --auth \
                 --port=27017 \
                 --dbpath=/data/db \
                 --bind_ip_all \
                 --tlsOnNormalPorts \
-                --tlsCAFile=/certs-tls/ca.crt \
-                --tlsCertificateKeyFile=/tls.pem
+                --tlsCAFile=/certs-cluster-auth/ca.crt \
+                --tlsCertificateKeyFile=/cluster-auth.pem \
                 --tlsClusterFile=/cluster-auth.pem \
                 --tlsClusterCAFile=/certs-cluster-auth/ca.crt \
-                --clusterAuthMode=x509 \
-                --tlsAllowConnectionsWithoutCertificates
+                --clusterAuthMode=x509
+
+
+          #    #\
+          #    #  --tlsAllowInvalidHostnames
+
+           #   #\
+           #   #  --tlsAllowConnectionsWithoutCertificates
 
           livenessProbe:
-            exec:
-              command:
-                - "mongo"
-                - "--tls"
-                - "--tlsCAFile=/certs-tls/ca.crt"
-                - "--tlsCertificateKeyFile=/cluster-auth.pem"
-                - "--tlsAllowInvalidHostnames"
-                - "--eval"
-                - "db.adminCommand('ping')"
+            tcpSocket:
+              port: 27017
             initialDelaySeconds: 30
             timeoutSeconds: 1
             failureThreshold: 3
             periodSeconds: 10
             successThreshold: 1
           readinessProbe:
-            exec:
-              command:
-                - "mongo"
-                - "--tls"
-                - "--tlsCAFile=/certs-tls/ca.crt"
-                - "--tlsCertificateKeyFile=/cluster-auth.pem"
-                - "--tlsAllowInvalidHostnames"
-                - "--eval"
-                - "db.adminCommand('ping')"
+            tcpSocket:
+              port: 27017
             initialDelaySeconds: 5
             timeoutSeconds: 1
-            failureThreshold: 3
-            periodSeconds: 5
+            failureThreshold: 30
+            periodSeconds: 10
             successThreshold: 1
           ports:
             - containerPort: 27017
@@ -168,16 +168,11 @@ spec:
           volumeMounts:
             - name: mongo
               mountPath: /data/db
-            - name: certs-tls
-              mountPath: /certs-tls
             - name: certs-cluster-auth
               mountPath: /certs-cluster-auth
             - name: certs-root
               mountPath: /certs-root
       volumes:
-        - name: certs-tls
-          secret:
-            secretName: certificate-mongodb-config-server-tls
         - name: certs-cluster-auth
           secret:
             secretName: certificate-mongodb-config-server-cluster-auth
